@@ -85,23 +85,30 @@ internal sealed class GameSwitcher : IGitHubPluginUpdates
 			return;
 		}
 
-		Bot? bot = Bot.GetBot(BotName);
-		if (bot == null)
-		{
-			Log.Warn("Invalid Bot name. Exiting.");
-			return;
-		}
+		Bot? bot = null;
 
-		// Wait until the bot is logged in or a timeout occurs
-		var timeout = TimeSpan.FromSeconds(60); // Set timeout duration
-		var startTime = DateTime.UtcNow;
+		// wait until the bot is logged in or a timeout occurs
+		var timeout = timespan.fromseconds(60); // set timeout duration
+		var starttime = datetime.utcnow;
 
-		while (!bot.IsConnectedAndLoggedOn)
+		while (true)
 		{
 			if (DateTime.UtcNow - startTime > timeout)
 			{
 				Log.Warn("Bot login timed out. Exiting.");
 				return;
+			}
+
+			if (bot == null)
+			{
+				try
+				{
+					bot = Bot.GetBot(BotName);
+				}
+				catch {}
+			}
+			else if (bot.IsConnectedAndLoggedOn) {
+				break;
 			}
 
 			Log.Info("Waiting for the bot to log in...");
