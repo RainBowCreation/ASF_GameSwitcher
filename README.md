@@ -12,10 +12,11 @@ This plugin will play all game in you library for given time.
 
 ### Config
 
-BotName = "YourBotName";  
-FilePath = "app_ids.txt";
-Minutes = 1;
-Increament = false;
+- BotName = "YourBotName"; // Bot Name
+- FilePath = "app_ids.txt"; // File of all lib app_id location
+- Minutes = 1; // minute to play all game for
+- Increament = false; // false will skil game that playtime >= Minute
+
 
 ---
 
