@@ -34,26 +34,26 @@ internal sealed class GameSwitcher : IGitHubPluginUpdates
 
 		foreach (string line in header)
 		{
-			ASF.ArchiLogger.LogGenericInfo($"{line}");
+			Log.Info($"{line}");
 		}
 
 		LoadConfiguration();
 
 		if (string.IsNullOrEmpty(BotName))
 		{
-			ASF.ArchiLogger.LogGenericWarning("Bot name is missing from the configuration. Please specify it.");
+			Log.Warn("Bot name is missing from the configuration. Please specify it.");
 			return Task.CompletedTask;
 		}
 
 		if (string.IsNullOrEmpty(FilePath))
 		{
-			FilePath = "app_ids.txt"; // Default to "app_ids.txt" if not specified
+			FilePath = "plugins/app_ids.txt"; // Default to "app_ids.txt" if not specified
 		}
 
 		List<string>? appIds = ReadAppIds(FilePath);
 		if (appIds == null || appIds.Count == 0)
 		{
-			ASF.ArchiLogger.LogGenericWarning("No AppIDs found. Exiting.");
+			Log.Warn("No AppIDs found. Exiting.");
 			return Task.CompletedTask;
 		}
 
@@ -64,8 +64,8 @@ internal sealed class GameSwitcher : IGitHubPluginUpdates
 	private static void LoadConfiguration()
 	{
 		// Load configuration values
-		BotName = "YourBotName";
-		FilePath = "app_ids.txt";
+		BotName = "RainBowCreation";
+		FilePath = "plugins/app_ids.txt";
 		Minutes = 1;
 		Increament = false;
 		LoginTimeOut = 60;
@@ -75,20 +75,20 @@ internal sealed class GameSwitcher : IGitHubPluginUpdates
 	{
 		if (Minutes <= 0)
 		{
-			ASF.ArchiLogger.LogGenericWarning("Invalid Minutes config. Exiting.");
+			Log.Warn("Invalid Minutes config. Exiting.");
 			return;
 		}
 
 		if (string.IsNullOrEmpty(BotName))
 		{
-			ASF.ArchiLogger.LogGenericWarning("Invalid Bot name. Exiting.");
+			Log.Warn("Invalid Bot name. Exiting.");
 			return;
 		}
 
 		Bot? bot = Bot.GetBot(BotName);
 		if (bot == null)
 		{
-			ASF.ArchiLogger.LogGenericWarning("Invalid Bot name. Exiting.");
+			Log.Warn("Invalid Bot name. Exiting.");
 			return;
 		}
 
@@ -96,22 +96,22 @@ internal sealed class GameSwitcher : IGitHubPluginUpdates
 		var timeout = TimeSpan.FromSeconds(60); // Set timeout duration
 		var startTime = DateTime.UtcNow;
 
-		while (!bot.LoggedOn)
+		while (!bot.IsConnectedAndLoggedOn)
 		{
 			if (DateTime.UtcNow - startTime > timeout)
 			{
-				ASF.ArchiLogger.LogGenericWarning("Bot login timed out. Exiting.");
+				Log.Warn("Bot login timed out. Exiting.");
 				return;
 			}
 
-			ASF.ArchiLogger.LogGenericInfo("Waiting for the bot to log in...");
+			Log.Info("Waiting for the bot to log in...");
 			await Task.Delay(TimeSpan.FromSeconds(5)).ConfigureAwait(false); // Check every 5 seconds
 		}
 
 		List<string>? appIds = ReadAppIds(FilePath);
 		if (appIds == null || appIds.Count == 0)
 		{
-			ASF.ArchiLogger.LogGenericWarning("No AppIDs found. Exiting.");
+			Log.Warn("No AppIDs found. Exiting.");
 			return;
 		}
 
@@ -121,15 +121,15 @@ internal sealed class GameSwitcher : IGitHubPluginUpdates
 			IReadOnlyCollection<uint>? uAppID = AppIDConverter.ConvertStringToAppIDs(appId);
 			if (uAppID == null || uAppID.Count == 0) // Updated to check for null
 			{
-				ASF.ArchiLogger.LogGenericWarning("Error parsing appID. Skipping.");
+				Log.Warn("Error parsing appID. Skipping.");
 				continue;
 			}
 
-			ASF.ArchiLogger.LogGenericInfo($"Playing game with AppID: {appId}");
+			Log.Info($"Playing game with AppID: {appId}");
 			await bot.Actions.Play(uAppID).ConfigureAwait(false);
 			await Task.Delay(TimeSpan.FromMinutes(Minutes)).ConfigureAwait(false);
 
-			ASF.ArchiLogger.LogGenericInfo($"Stopping game with AppID: {appId}");
+			Log.Info($"Stopping game with AppID: {appId}");
 			await bot.Actions.Pause(true).ConfigureAwait(false);
 			await Task.Delay(TimeSpan.FromSeconds(5)).ConfigureAwait(false);
 		}
@@ -146,7 +146,7 @@ internal sealed class GameSwitcher : IGitHubPluginUpdates
 		}
 		catch (Exception ex)
 		{
-			ASF.ArchiLogger.LogGenericWarning($"Error reading file: {ex.Message}");
+			Log.Warn($"Error reading file: {ex.Message}");
 			return null;
 		}
 	}

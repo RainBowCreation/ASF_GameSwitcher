@@ -1,7 +1,6 @@
 
 using System;
 using System.Collections.Generic;
-using ArchiSteamFarm.Core;
 
 namespace GameSwitcher.Utils;
 
@@ -30,7 +29,7 @@ public static class AppIDConverter
             }
             else
             {
-                ASF.ArchiLogger.LogGenericWarning($"Invalid AppID: {appID}");
+                Log.Warn($"Invalid AppID: {appID}");
             }
         }
 
