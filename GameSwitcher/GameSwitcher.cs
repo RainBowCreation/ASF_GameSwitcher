@@ -1,10 +1,13 @@
 ﻿using System;
 using System.IO;
 using System.Threading.Tasks;
+using ArchiSteamFarm.Steam;
+using ArchiSteamFarm.Steam.Interaction;
 using ArchiSteamFarm.Core;
 using ArchiSteamFarm.Plugins.Interfaces;
 using JetBrains.Annotations;
 using System.Collections.Generic;
+using GameSwitcher.Utils;
 
 namespace GameSwitcher;
 
@@ -19,8 +22,8 @@ internal sealed class GameSwitcher : IGitHubPluginUpdates
 	// Configuration settings
 	private static string BotName { get; set; }
 	private static string FilePath { get; set; }
-	private static string Minutes { get; set; }
-	private static string Increament { get; set; }
+	private static int Minutes { get; set; }
+	private static bool Increament { get; set; }
 
 	public Task OnLoaded()
 	{
@@ -88,15 +91,24 @@ internal sealed class GameSwitcher : IGitHubPluginUpdates
 			ASF.ArchiLogger.LogGenericWarning("Invalid Minutes config. Exiting.");
 		}
 
+		Bot bot = Bot.GetBot(BotName);
+
 		// Iterate over each AppID and send play/stop commands
 		foreach (string appId in appIds)
 		{
+			IReadOnlyCollection<uint> uAppID = AppIDConverter.ConvertStringToAppID(appId);
+			if (uAppID == 0)
+			{
+				ASF.ArchiLogger.LogGenericWarning("Error parsing appID. Skipping.");
+				continue;
+			}
 			ASF.ArchiLogger.LogGenericInfo($"Playing game with AppID: {appId}");
-			await SendCommandToASF(BotName, $"!play {appId}");
+			await bot.Actions.Play(uAppId);
+
 			await Task.Delay(TimeSpan.FromMinutes(Minutes)); // Wait for 1 minute
 
 			ASF.ArchiLogger.LogGenericInfo($"Stopping game with AppID: {appId}");
-			await SendCommandToASF(BotName, "!stop");
+			await bot.Actions.Pause(true);
 			await Task.Delay(TimeSpan.FromSeconds(5)); // Short pause before starting next game
 		}
 	}
@@ -113,23 +125,6 @@ internal sealed class GameSwitcher : IGitHubPluginUpdates
 		{
 			ASF.ArchiLogger.LogGenericWarning($"Error reading file: {ex.Message}");
 			return null;
-		}
-	}
-
-	private async Task SendCommandToASF(string botName, string command)
-	{
-		Bot bot = Bot.GetBot(botName);
-		if (bot == null)
-		{
-			ASF.ArchiLogger.LogGenericWarning($"Bot '{botName}' not found.");
-			return;
-		}
-
-		// Send the command to ASF and await the response
-		string response = await bot.Commands.HandleMessage(command, bot.BotName);
-		if (!string.IsNullOrEmpty(response))
-		{
-			ASF.ArchiLogger.LogGenericInfo($"Response from ASF: {response}");
 		}
 	}
 }
