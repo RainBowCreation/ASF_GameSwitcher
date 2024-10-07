@@ -20,8 +20,8 @@ internal sealed class GameSwitcher : IGitHubPluginUpdates
 	public Version Version => typeof(GameSwitcher).Assembly.GetName().Version ?? throw new InvalidOperationException(nameof(Version));
 
 	// Configuration settings
-	private static string BotName { get; set; }
-	private static string FilePath { get; set; }
+	private static string BotName { get; set; } = string.Empty;
+	private static string FilePath { get; set; } = string.Empty;
 	private static int Minutes { get; set; }
 	private static bool Increament { get; set; }
 
@@ -30,17 +30,18 @@ internal sealed class GameSwitcher : IGitHubPluginUpdates
 		string[] header =  {"#####################################################################################",                            "#  _____       _       ____                 _____                _   _              #",                            "# |  __ \\     (_)     |  _ \\               / ____|              | | (_)             #",                          "# | |__) |__ _ _ _ __ | |_) | _____      _| |     _ __ ___  __ _| |_ _  ___  _ __   #",                            "# |  _  // _` | | '_ \\|  _ < / _ \\ \\ /\\ / / |    | '__/ _ \\/ _` | __| |/ _ \\| '_ \\  #",                         "# | | \\ \\ (_| | | | | | |_) | (_) \\ V  V /| |____| | |  __/ (_| | |_| | (_) | | | | #",                         "# |_|  \\_\\__,_|_|_| |_|____/ \\___/ \\_/\\_/  \\_____|_|  \\___|\\__,_|\\__|_|\\___/|_| |_| #",
 							"#                                                                                   #",
 							$"##############################################################${Name} {Version}#####"};
+
 		foreach (string line in header)
 		{
 			ASF.ArchiLogger.LogGenericInfo($"{line}");
 		}
-		// Load configuration
+
 		LoadConfiguration();
-		// Check if BotName is specified in the configuration
+
 		if (string.IsNullOrEmpty(BotName))
 		{
 			ASF.ArchiLogger.LogGenericWarning("Bot name is missing from the configuration. Please specify it.");
-			return Task.CompletedTask;;
+			return Task.CompletedTask;
 		}
 
 		if (string.IsNullOrEmpty(FilePath))
@@ -48,78 +49,82 @@ internal sealed class GameSwitcher : IGitHubPluginUpdates
 			FilePath = "app_ids.txt"; // Default to "app_ids.txt" if not specified
 		}
 
-		// Load AppIDs from the file
-		List<string> appIds = ReadAppIds(FilePath);
-
+		List<string>? appIds = ReadAppIds(FilePath);
 		if (appIds == null || appIds.Count == 0)
 		{
 			ASF.ArchiLogger.LogGenericWarning("No AppIDs found. Exiting.");
-			return Task.CompletedTask;;
+			return Task.CompletedTask;
 		}
 
 		Task.Run(() => GameSwitcherTask());
 		return Task.CompletedTask;
 	}
 
-	private void LoadConfiguration()
+	private static void LoadConfiguration()
 	{
-		// Example config values (hardcoded for demonstration purposes)
-		BotName = "YourBotName";  // Replace with actual bot name from config
-		FilePath = "app_ids.txt"; // Replace with actual path to the app IDs file from config
-		Minutes = 1; // Replace with actual path to the app IDs file from config
-		Increament = false; // Replace with actual path to the app IDs file from config
+		// Load configuration values
+		BotName = "YourBotName";
+		FilePath = "app_ids.txt";
+		Minutes = 1;
+		Increament = false;
 	}
 
-	private async Task GameSwitcherTask()
+	private static async Task GameSwitcherTask()
 	{
-		if (string.IsNullOrEmpty(FilePath))
+		if (Minutes <= 0)
 		{
-			FilePath = "app_ids.txt"; // Default to "app_ids.txt" if not specified
+			ASF.ArchiLogger.LogGenericWarning("Invalid Minutes config. Exiting.");
+			return;
 		}
 
-		// Load AppIDs from the file
-		List<string> appIds = ReadAppIds(FilePath);
+		if (string.IsNullOrEmpty(BotName))
+		{
+			ASF.ArchiLogger.LogGenericWarning("Invalid Bot name. Exiting.");
+			return;
+		}
 
+		Bot? bot = Bot.GetBot(BotName);
+		if (bot == null)
+		{
+			ASF.ArchiLogger.LogGenericWarning("Invalid Bot name. Exiting.");
+			return;
+		}
+
+		List<string>? appIds = ReadAppIds(FilePath);
 		if (appIds == null || appIds.Count == 0)
 		{
 			ASF.ArchiLogger.LogGenericWarning("No AppIDs found. Exiting.");
 			return;
 		}
 
-		if (Minutes <= 0)
-		{
-			ASF.ArchiLogger.LogGenericWarning("Invalid Minutes config. Exiting.");
-		}
-
-		Bot bot = Bot.GetBot(BotName);
-
-		// Iterate over each AppID and send play/stop commands
 		foreach (string appId in appIds)
 		{
-			IReadOnlyCollection<uint> uAppID = AppIDConverter.ConvertStringToAppID(appId);
-			if (uAppID == 0)
+			// Ensure you handle the possibility of a null return from the conversion method
+			IReadOnlyCollection<uint>? uAppID = AppIDConverter.ConvertStringToAppIDs(appId);
+			if (uAppID == null || uAppID.Count == 0) // Updated to check for null
 			{
 				ASF.ArchiLogger.LogGenericWarning("Error parsing appID. Skipping.");
 				continue;
 			}
-			ASF.ArchiLogger.LogGenericInfo($"Playing game with AppID: {appId}");
-			await bot.Actions.Play(uAppId);
 
-			await Task.Delay(TimeSpan.FromMinutes(Minutes)); // Wait for 1 minute
+			ASF.ArchiLogger.LogGenericInfo($"Playing game with AppID: {appId}");
+			await bot.Actions.Play(uAppID).ConfigureAwait(false);
+			await Task.Delay(TimeSpan.FromMinutes(Minutes)).ConfigureAwait(false);
 
 			ASF.ArchiLogger.LogGenericInfo($"Stopping game with AppID: {appId}");
-			await bot.Actions.Pause(true);
-			await Task.Delay(TimeSpan.FromSeconds(5)); // Short pause before starting next game
+			await bot.Actions.Pause(true).ConfigureAwait(false);
+			await Task.Delay(TimeSpan.FromSeconds(5)).ConfigureAwait(false);
 		}
 	}
 
-	private static List<string> ReadAppIds(string filePath)
+	private static List<string>? ReadAppIds(string filePath)
 	{
 		try
 		{
+			// Assuming this part is unchanged, as it correctly handles reading the lines
 			List<string> appIds = new List<string>(File.ReadAllLines(filePath));
 			appIds.RemoveAll(string.IsNullOrWhiteSpace); // Remove empty lines
-			return appIds;
+			return appIds.Count > 0 ? appIds : null; // Explicitly return null if empty
 		}
 		catch (Exception ex)
 		{
