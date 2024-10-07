@@ -88,8 +88,8 @@ internal sealed class GameSwitcher : IGitHubPluginUpdates
 		Bot? bot = null;
 
 		// wait until the bot is logged in or a timeout occurs
-		var timeout = timespan.fromseconds(60); // set timeout duration
-		var starttime = datetime.utcnow;
+		var timeout = TimeSpan.FromSeconds(60); // set timeout duration
+		var startTime = DateTime.UtcNow;
 
 		while (true)
 		{
