@@ -3,7 +3,7 @@
 
 	<PropertyGroup>
 		<PluginName>GameSwitcher</PluginName>
-		<Version>1.0.0.0</Version>
+		<Version>1.0.0</Version> <!-- must be in x.x.x 1 char each long -->
 	</PropertyGroup>
 
 	<PropertyGroup>
