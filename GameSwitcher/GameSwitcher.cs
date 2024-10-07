@@ -23,6 +23,7 @@ internal sealed class GameSwitcher : IGitHubPluginUpdates
 	private static string BotName { get; set; } = string.Empty;
 	private static string FilePath { get; set; } = string.Empty;
 	private static int Minutes { get; set; }
+	private static int LoginTimeOut { get; set; }
 	private static bool Increament { get; set; }
 
 	public Task OnLoaded()
@@ -67,6 +68,7 @@ internal sealed class GameSwitcher : IGitHubPluginUpdates
 		FilePath = "app_ids.txt";
 		Minutes = 1;
 		Increament = false;
+		LoginTimeOut = 60;
 	}
 
 	private static async Task GameSwitcherTask()
@@ -88,6 +90,22 @@ internal sealed class GameSwitcher : IGitHubPluginUpdates
 		{
 			ASF.ArchiLogger.LogGenericWarning("Invalid Bot name. Exiting.");
 			return;
+		}
+
+		// Wait until the bot is logged in or a timeout occurs
+		var timeout = TimeSpan.FromSeconds(60); // Set timeout duration
+		var startTime = DateTime.UtcNow;
+
+		while (!bot.LoggedOn)
+		{
+			if (DateTime.UtcNow - startTime > timeout)
+			{
+				ASF.ArchiLogger.LogGenericWarning("Bot login timed out. Exiting.");
+				return;
+			}
+
+			ASF.ArchiLogger.LogGenericInfo("Waiting for the bot to log in...");
+			await Task.Delay(TimeSpan.FromSeconds(5)).ConfigureAwait(false); // Check every 5 seconds
 		}
 
 		List<string>? appIds = ReadAppIds(FilePath);
