@@ -1,4 +1,4 @@
-using using ArchiSteamFarm.Core;
+using ArchiSteamFarm.Core;
 
 namespace GameSwitcher.Utils;
 
