@@ -19,6 +19,8 @@ internal sealed class GameSwitcher : IGitHubPluginUpdates
 	// Configuration settings
 	private static string BotName { get; set; }
 	private static string FilePath { get; set; }
+	private static string Minutes { get; set; }
+	private static string Increament { get; set; }
 
 	public Task OnLoaded()
 	{
@@ -61,6 +63,8 @@ internal sealed class GameSwitcher : IGitHubPluginUpdates
 		// Example config values (hardcoded for demonstration purposes)
 		BotName = "YourBotName";  // Replace with actual bot name from config
 		FilePath = "app_ids.txt"; // Replace with actual path to the app IDs file from config
+		Minutes = 1; // Replace with actual path to the app IDs file from config
+		Increament = false; // Replace with actual path to the app IDs file from config
 	}
 
 	private async Task GameSwitcherTask()
@@ -79,12 +83,17 @@ internal sealed class GameSwitcher : IGitHubPluginUpdates
 			return;
 		}
 
+		if (Minutes <= 0)
+		{
+			ASF.ArchiLogger.LogGenericWarning("Invalid Minutes config. Exiting.");
+		}
+
 		// Iterate over each AppID and send play/stop commands
 		foreach (string appId in appIds)
 		{
 			ASF.ArchiLogger.LogGenericInfo($"Playing game with AppID: {appId}");
 			await SendCommandToASF(BotName, $"!play {appId}");
-			await Task.Delay(TimeSpan.FromMinutes(1)); // Wait for 1 minute
+			await Task.Delay(TimeSpan.FromMinutes(Minutes)); // Wait for 1 minute
 
 			ASF.ArchiLogger.LogGenericInfo($"Stopping game with AppID: {appId}");
 			await SendCommandToASF(BotName, "!stop");
